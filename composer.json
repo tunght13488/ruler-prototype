@@ -21,13 +21,16 @@
         "sensio/distribution-bundle": "~5.0",
         "sensio/framework-extra-bundle": "^3.0.2",
         "incenteev/composer-parameter-handler": "~2.0",
-        "hoa/ruler": "^2.16"
+        "hoa/ruler": "^2.16",
+        "qandidate/symfony-json-request-transformer": "^1.2"
     },
     "require-dev": {
         "sensio/generator-bundle": "~3.0",
-        "symfony/phpunit-bridge": "~2.7"
+        "symfony/phpunit-bridge": "~2.7",
+        "phpunit/phpunit": "5.3.*"
     },
     "scripts": {
+        "test": "phpunit -c app/",
         "post-install-cmd": [
             "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
