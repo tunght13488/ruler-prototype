@@ -40,8 +40,8 @@ class DefaultControllerTest extends WebTestCase
         $userRepository->expects($this->any())
                        ->method('findOneBy')
                        ->will($this->returnValueMap([
-                           [['facebookSenderId' => 123], null, null],
-                           [['facebookSenderId' => 234], null, $user],
+                           [['facebookSenderId' => 1], null, null],
+                           [['facebookSenderId' => 2], null, $user],
                        ]));
 
         $entityManager = $this->getMockBuilder(ObjectManager::class)
@@ -77,9 +77,16 @@ class DefaultControllerTest extends WebTestCase
     public function getCheckData()
     {
         return [
-            [123, null, ['message' => 'show_age_check']],
-            [234, '1234', ['message' => 'show_location']],
-            [234, null, ['message' => 'show_generic']],
+            [1, null, ['message' => 'show_age_check']],
+            [1, '1234', ['message' => 'show_age_check']],
+            [1, '123', ['message' => 'show_age_check']],
+            [1, '12345', ['message' => 'show_age_check']],
+
+            [2, '1234', ['message' => 'show_location']],
+
+            [2, '123', ['message' => 'show_generic']],
+            [2, '12345', ['message' => 'show_generic']],
+            [2, null, ['message' => 'show_generic']],
         ];
     }
 }
