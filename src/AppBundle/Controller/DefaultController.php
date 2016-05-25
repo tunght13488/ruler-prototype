@@ -17,6 +17,11 @@ use Symfony\Component\HttpFoundation\Request;
 class DefaultController extends Controller
 {
     /**
+     * @var \Symfony\Component\HttpFoundation\JsonResponse
+     */
+    protected $checkResponse;
+
+    /**
      * @Route("/", methods={"GET"})
      */
     public function indexAction(Request $request)
@@ -36,10 +41,10 @@ class DefaultController extends Controller
      */
     public function checkAction(Request $request)
     {
+        $this->checkResponse = new JsonResponse(['message' => 'Something wrong happened'], 500);
+
         $sender = $request->get('sender');
         $postcode = $request->get('postcode');
-
-        $response = new JsonResponse(['message' => 'Something wrong happened'], 500);
 
         /*
          * Register operators
@@ -63,35 +68,77 @@ class DefaultController extends Controller
         ]);
 
         /*
-         * Define rules
+         * Define actions
          */
-        $userIsNull = $rb->create($rb['user']->equalTo(null), function () use (&$response) {
-            $response = new JsonResponse(['message' => 'show_age_check']);
-        });
-        $postcodeIsCorrect = $rb->create($rb['postcode']->isPostcode());
-        $userIsNotNullAndPostcodeIsCorrect = $rb->create($rb->logicalAnd(
-            $rb->logicalNot($userIsNull),
-            $postcodeIsCorrect
-        ), function () use (&$response) {
-            $response = new JsonResponse(['message' => 'show_location']);
-        });
-        $userIsNotNullAndPostcodeIsNotCorrect = $rb->create($rb->logicalAnd(
-            $rb->logicalNot($userIsNull),
-            $rb->logicalNot($postcodeIsCorrect)
-        ), function () use (&$response) {
-            $response = new JsonResponse(['message' => 'show_generic']);
-        });
+        $showAgeCheck = [$this, 'showAgeCheck'];
+        $showLocation = [$this, 'showLocation'];
+        $showGeneric = [$this, 'showGeneric'];
+
+        /*
+         * Define conditions
+         */
+        $conditionUserIsNull = $rb->create($rb['user']->equalTo(null));
+        $conditionUserIsNull = serialize($conditionUserIsNull);
+        $conditionUserIsNull = unserialize($conditionUserIsNull);
+        $conditionPostcodeIsCorrect = $rb->create($rb['postcode']->isPostcode());
+        $conditionUserIsNotNullAndPostcodeIsCorrect = $rb->create(
+            $rb->logicalAnd(
+                $rb->logicalNot($conditionUserIsNull),
+                $conditionPostcodeIsCorrect
+            )
+        );
+        $userIsNotNullAndPostcodeIsNotCorrect = $rb->create(
+            $rb->logicalAnd(
+                $rb->logicalNot($conditionUserIsNull),
+                $rb->logicalNot($conditionPostcodeIsCorrect)
+            )
+        );
+
+        /*
+         * Define rules (condition and action)
+         */
+        $ruleFirstVisit = $rb->create($conditionUserIsNull, $showAgeCheck);
+        $ruleGetLocation = $rb->create($conditionUserIsNotNullAndPostcodeIsCorrect, $showLocation);
+        $ruleGeneric = $rb->create($userIsNotNullAndPostcodeIsNotCorrect, $showGeneric);
 
         /*
          * Build and run rule set
          */
         $ruleSet = new RuleSet([
-            $userIsNull,
-            $userIsNotNullAndPostcodeIsCorrect,
-            $userIsNotNullAndPostcodeIsNotCorrect,
+            $ruleFirstVisit,
+            $ruleGetLocation,
+            $ruleGeneric,
         ]);
+
+        // $ruleSet = serialize($ruleSet);
+        // $ruleSet = unserialize($ruleSet);
+
         $ruleSet->executeRules($context);
 
-        return $response;
+        return $this->checkResponse;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function showAgeCheck()
+    {
+        $this->checkResponse->setData(['message' => 'show_age_check'])->setStatusCode(200);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function showLocation()
+    {
+        $this->checkResponse->setData(['message' => 'show_location'])->setStatusCode(200);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function showGeneric()
+    {
+        $this->checkResponse->setData(['message' => 'show_generic'])->setStatusCode(200);
     }
 }
