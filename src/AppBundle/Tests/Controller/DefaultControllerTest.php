@@ -24,6 +24,10 @@ class DefaultControllerTest extends WebTestCase
 
     /**
      * @dataProvider \AppBundle\Tests\Controller\DefaultControllerTest::getCheckData
+     *
+     * @param int    $sender
+     * @param string $postcode
+     * @param array  $expected
      */
     public function testCheck($sender, $postcode, $expected)
     {
